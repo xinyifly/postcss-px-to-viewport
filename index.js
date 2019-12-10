@@ -19,7 +19,10 @@ var defaults = {
   replace: true,
   landscape: false,
   landscapeUnit: 'vw',
-  landscapeWidth: 568
+  landscapeWidth: 568,
+  sm: undefined,
+  smUnit: 'vw',
+  smWidth: 750,
 };
 
 module.exports = postcss.plugin('postcss-px-to-viewport', function (options) {
@@ -29,6 +32,7 @@ module.exports = postcss.plugin('postcss-px-to-viewport', function (options) {
   var pxRegex = getUnitRegexp(opts.unitToConvert);
   var satisfyPropList = createPropListMatcher(opts.propList);
   var landscapeRules = [];
+  var smRules = [];
   
   return function (css) {
     css.walkRules(function (rule) {
@@ -66,6 +70,23 @@ module.exports = postcss.plugin('postcss-px-to-viewport', function (options) {
         }
       }
 
+      if (opts.sm && !rule.parent.params) {
+        var smRule = rule.clone().removeAll();
+
+        rule.walkDecls(function(decl) {
+          if (decl.value.indexOf(opts.unitToConvert) === -1) return;
+          if (!satisfyPropList(decl.prop)) return;
+
+          smRule.append(decl.clone({
+            value: decl.value.replace(pxRegex, createPxReplace(opts, opts.smUnit, opts.smWidth))
+          }));
+        });
+
+        if (smRule.nodes.length > 0) {
+          smRules.push(smRule);
+        }
+      }
+
       if (!validateParams(rule.parent.params, opts.mediaQuery)) return;
       
       rule.walkDecls(function(decl, i) {
@@ -79,6 +100,9 @@ module.exports = postcss.plugin('postcss-px-to-viewport', function (options) {
         if (opts.landscape && params && params.indexOf('landscape') !== -1) {
           unit = opts.landscapeUnit;
           size = opts.landscapeWidth;
+        } else if (opts.sm && params && params.indexOf(`(max-width: ${opts.sm}px)`) !== -1) {
+          unit = opts.smUnit;
+          size = opts.smWidth;
         } else {
           unit = getUnit(decl.prop, opts);
           size = opts.viewportWidth;
@@ -103,6 +127,15 @@ module.exports = postcss.plugin('postcss-px-to-viewport', function (options) {
         landscapeRoot.append(rule);
       });
       css.append(landscapeRoot);
+    }
+
+    if (smRules.length > 0) {
+      var smRoot = new postcss.atRule({ params: `(max-width: ${opts.sm}px)`, name: 'media' });
+
+      smRules.forEach(function(rule) {
+        smRoot.append(rule);
+      });
+      css.append(smRoot);
     }
   };
 });
