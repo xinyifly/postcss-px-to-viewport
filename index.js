@@ -121,7 +121,7 @@ module.exports = postcss.plugin('postcss-px-to-viewport', function (options) {
     });
     
     if (landscapeRules.length > 0) {
-      var landscapeRoot = new postcss.atRule({ params: '(orientation: landscape)', name: 'media' });
+      var landscapeRoot = postcss.atRule({ params: '(orientation: landscape)', name: 'media' });
       
       landscapeRules.forEach(function(rule) {
         landscapeRoot.append(rule);
@@ -130,7 +130,7 @@ module.exports = postcss.plugin('postcss-px-to-viewport', function (options) {
     }
 
     if (smRules.length > 0) {
-      var smRoot = new postcss.atRule({ params: `(max-width: ${opts.sm}px)`, name: 'media' });
+      var smRoot = postcss.atRule({ params: `(max-width: ${opts.sm}px)`, name: 'media' });
 
       smRules.forEach(function(rule) {
         smRoot.append(rule);
